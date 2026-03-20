@@ -1,0 +1,27 @@
+# 환경변수 및 시크릿
+.env
+.env.local
+.env.*.local
+scripts/.env
+
+# Firebase 서비스 계정 키 (절대 커밋 금지)
+serviceAccountKey.json
+*serviceAccountKey*.json
+*-firebase-adminsdk-*.json
+
+# 의존성
+node_modules/
+scripts/node_modules/
+
+# 빌드 산출물
+dist/
+build/
+.firebase/
+
+# 에디터 및 OS
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+
+# Claude Code 설정
+.claude/settings.local.json

@@ -1,0 +1,15 @@
+{
+  "name": "perfumemap-scripts",
+  "version": "1.0.0",
+  "description": "Firebase Firestore upload scripts for perfumemap",
+  "main": "uploadToFirestore.js",
+  "type": "commonjs",
+  "scripts": {
+    "upload": "node uploadToFirestore.js"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.6",
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^12.0.0"
+  }
+}

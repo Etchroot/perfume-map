@@ -1,0 +1,1 @@
+Always respond in Korean only, regardless of the language used in prompts.
