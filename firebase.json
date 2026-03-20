@@ -3,8 +3,8 @@
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
-      { "source": "/api/getEmbedding",  "function": "getEmbedding"  },
-      { "source": "/api/matchModifier", "function": "matchModifier" },
+      { "source": "/api/getEmbedding",  "run": { "serviceId": "getembedding",  "region": "us-central1" } },
+      { "source": "/api/matchModifier", "run": { "serviceId": "matchmodifier", "region": "us-central1" } },
       { "source": "**",                 "destination": "/index.html" }
     ]
   },

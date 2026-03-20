@@ -1,4 +1,4 @@
-const functions = require("firebase-functions");
+const { onRequest } = require("firebase-functions/v2/https");
 
 const ENDPOINT          = () => (process.env.AZURE_OPENAI_ENDPOINT ?? "").replace(/\/$/, "");
 const API_KEY           = () =>  process.env.AZURE_OPENAI_API_KEY;
@@ -24,7 +24,7 @@ async function azureFetch(deploymentName, path, body) {
 // ── /api/getEmbedding ─────────────────────────────────────────────────────────
 // body: { text: string }
 // returns: { embedding: number[] }
-exports.getEmbedding = functions.https.onRequest(async (req, res) => {
+exports.getEmbedding = onRequest({ invoker: "public", region: "us-central1" }, async (req, res) => {
   if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
 
   const { text } = req.body;
@@ -42,7 +42,7 @@ exports.getEmbedding = functions.https.onRequest(async (req, res) => {
 // ── /api/matchModifier ────────────────────────────────────────────────────────
 // body: { userInput: string, candidates: Array<{modifier, ingredient}> }
 // returns: { selected: string, ingredient: string }
-exports.matchModifier = functions.https.onRequest(async (req, res) => {
+exports.matchModifier = onRequest({ invoker: "public", region: "us-central1" }, async (req, res) => {
   if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
 
   const { userInput, candidates } = req.body;
