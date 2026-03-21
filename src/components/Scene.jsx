@@ -69,7 +69,7 @@ function CameraController({ result, modifierRef, controlsRef }) {
   return null;
 }
 
-export default function Scene({ status, result, selectedFragrance, categoryPositions, particleRef, modifierRef }) {
+export default function Scene({ status, result, selectedFragrance, categories, particleRef, modifierRef }) {
   const controlsRef = useRef();
 
   return (
@@ -82,20 +82,26 @@ export default function Scene({ status, result, selectedFragrance, categoryPosit
 
       <OrbitControls
         ref={controlsRef}
-        enablePan={false}
+        enablePan={true}
         minDistance={6}
         maxDistance={22}
         autoRotate={status === "idle"}
         autoRotateSpeed={0.25}
         enableDamping
         dampingFactor={0.05}
+        mouseButtons={{
+          LEFT: THREE.MOUSE.ROTATE,
+          MIDDLE: THREE.MOUSE.DOLLY,
+          RIGHT: THREE.MOUSE.PAN,
+        }}
       />
 
       <CameraController result={result} modifierRef={modifierRef} controlsRef={controlsRef} />
 
-      <ParticleField ref={particleRef} status={status} categoryPositions={categoryPositions} />
+      <ParticleField ref={particleRef} status={status} categories={categories} />
 
-      {(status === "filtering" || status === "exploding" || status === "result") && selectedFragrance && (
+      {/* 혜성이 도착한 뒤(exploding~) 선택된 fragrance 구체 표시 */}
+      {(status === "exploding" || status === "result") && selectedFragrance && (
         <SelectedSphere fragrance={selectedFragrance} />
       )}
 

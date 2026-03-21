@@ -9,7 +9,7 @@ export default function App() {
   const [query,             setQuery]             = useState("");
   const [result,            setResult]            = useState(null);
   const [selectedFragrance, setSelectedFragrance] = useState(null);
-  const [categoryPositions, setCategoryPositions] = useState([]);
+  const [categories,         setCategories]         = useState([]);
   const [loadProgress,      setLoadProgress]      = useState(0);   // 0~100
   const [dataReady,         setDataReady]         = useState(false);
 
@@ -32,7 +32,7 @@ export default function App() {
       clearInterval(progressTimer.current);
       const cats = snap.docs.map((d) => d.data());
       categoriesRef.current = cats;
-      setCategoryPositions(cats.map((c) => c.position));
+      setCategories(cats);
       setLoadProgress(100);
       setTimeout(() => setDataReady(true), 400); // 100% 잠깐 보여준 뒤 UI 해제
       console.log(`[초기화] categories ${cats.length}개 로드 완료`);
@@ -65,38 +65,43 @@ export default function App() {
 
       setSelectedFragrance(matchedFragrance);
 
-      // ── [1차 애니메이션] 비선택 소멸 + 선택 점 중앙 수렴 ────────────────────
+      // ── [1차 애니메이션] + [2차 계산] 병렬 시작 ────────────────────────────
       setStatus("filtering");
-      particleRef.current.animateFilter(selectedIndex, async () => {
-        try {
-          // ── [2차] Firestore ingredients → GPT-4o로 modifier 정밀 매칭 ──────
-          const ingSnap    = await getDocs(
-            fsQuery(collection(db, "ingredients"), where("fragrance", "==", matchedFragrance))
-          );
-          const candidates = ingSnap.docs.map((d) => d.data());
-          console.log(`[2차] "${matchedFragrance}" 소속 원료 ${candidates.length}개`);
 
-          const match     = await matchModifier(q, candidates);
-          const winnerIdx = Math.max(
-            0,
-            candidates.findIndex((c) => c.ingredient === match.ingredient)
-          );
-          console.log(`[2차] 최종 선택: ${match.ingredient} / ${match.selected}`);
+      // 혜성 애니메이션 완료 Promise
+      const animDone = new Promise((resolve) => {
+        particleRef.current.animateFilter(selectedIndex, resolve);
+      });
 
-          // ── [2차 애니메이션] 민들레 폭발 ────────────────────────────────────
-          setStatus("exploding");
-          modifierRef.current.animateExplode(candidates, winnerIdx, () => {
-            setResult({
-              ingredient: match.ingredient,
-              modifier:   match.selected,
-              fragrance:  matchedFragrance,
-            });
-            setStatus("result");
-          });
-        } catch (err) {
-          console.error("[2차] 오류:", err);
-          handleReset();
-        }
+      // 2차 계산: 혜성 이동 중 백그라운드에서 실행
+      const step2Done = (async () => {
+        const ingSnap    = await getDocs(
+          fsQuery(collection(db, "ingredients"), where("fragrance", "==", matchedFragrance))
+        );
+        const candidates = ingSnap.docs.map((d) => d.data());
+        console.log(`[2차] "${matchedFragrance}" 소속 원료 ${candidates.length}개`);
+
+        const match     = await matchModifier(q, candidates);
+        const winnerIdx = Math.max(
+          0,
+          candidates.findIndex((c) => c.ingredient === match.ingredient)
+        );
+        console.log(`[2차] 최종 선택: ${match.ingredient} / ${match.selected}`);
+        return { candidates, match, winnerIdx };
+      })();
+
+      // 둘 다 완료될 때까지 대기
+      const [, step2] = await Promise.all([animDone, step2Done]);
+
+      // ── [2차 애니메이션] 민들레 폭발 ──────────────────────────────────────
+      setStatus("exploding");
+      modifierRef.current.animateExplode(step2.candidates, step2.winnerIdx, () => {
+        setResult({
+          ingredient: step2.match.ingredient,
+          modifier:   step2.match.selected,
+          fragrance:  matchedFragrance,
+        });
+        setStatus("result");
       });
     } catch (err) {
       console.error("[1차] 오류:", err);
@@ -164,7 +169,7 @@ export default function App() {
         status={status}
         result={result}
         selectedFragrance={selectedFragrance}
-        categoryPositions={categoryPositions}
+        categories={categories}
         particleRef={particleRef}
         modifierRef={modifierRef}
       />
@@ -181,7 +186,7 @@ export default function App() {
 
       {/* 검색창 */}
       {(status === "idle" || status === "loading") && (
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-3xl px-6">
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-xl px-4">
           <form onSubmit={handleSearch} className="relative">
             <input
               type="text"
@@ -190,7 +195,7 @@ export default function App() {
               placeholder="감성을 입력하세요  (예: 비 오는 숲, 설레는 아침)"
               disabled={status !== "idle"}
               className="
-                w-full px-10 py-7 pr-36 rounded-full text-lg
+                w-full px-7 py-5 pr-24 rounded-full text-sm
                 bg-black/30 backdrop-blur-md
                 border border-cyan-400/30
                 text-cyan-100 placeholder-cyan-500/40
@@ -203,8 +208,8 @@ export default function App() {
               type="submit"
               disabled={status !== "idle"}
               className="
-                absolute right-3 top-1/2 -translate-y-1/2
-                px-8 py-4 rounded-full text-base
+                absolute right-2 top-1/2 -translate-y-1/2
+                px-6 py-3 rounded-full text-sm
                 bg-cyan-400/10 hover:bg-cyan-400/25
                 border border-cyan-400/30 hover:border-cyan-400/60
                 text-cyan-300
